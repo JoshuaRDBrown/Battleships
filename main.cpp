@@ -5,6 +5,7 @@
 #include "./objects/Board.h"
 #include "./structs/GameConfigDetails.h"
 #include "Utils.h"
+#include "./objects/GameHandler.h"
 
 GameConfigDetails returnGameConfigDetails() {
 	Utils utils;
@@ -56,7 +57,8 @@ int main() {
 
 	GameConfigDetails gameConfig = returnGameConfigDetails();
 
-	Board playerBoard(gameConfig.boardHeight, gameConfig.boardWidth, gameConfig.boatData);
+	Board playerBoard(gameConfig.boardHeight, gameConfig.boardWidth, gameConfig.boatData, false);
+	Board computerBoard(gameConfig.boardHeight, gameConfig.boardWidth, gameConfig.boatData, true);
 
 	while(inputIsInvalid) {
 
@@ -69,9 +71,12 @@ int main() {
 		getline(std::cin, userInput);
 		try {
 			switch(std::stoi(userInput)) {
-				case 1:
-					playerBoard.drawBoard(true);
+				case 1: {
+					GameHandler gameHandler(&playerBoard, &computerBoard);
+					gameHandler.setUp();
 					inputIsInvalid = false;
+				}
+					
 				case 2: return 0; 
 				default: throw std::invalid_argument("");
 			}
