@@ -41,8 +41,9 @@ RowAndCol Utils::getIndexFromCoordinates(char *lettersArray, std::string coordin
 	std::string numberCoords;
 
 	//Compares values in the letters array to the letter value inputted and records the index of a match
-	for(int i = 0; i < sizeof(lettersArray); i ++) {
-		if(lettersArray[i] == coordinates[2]) {
+
+	for(int i = 0; i < 26; i ++) {
+		if(lettersArray[i] == coordinates.at(2)) {
 			indexOfLetter = i;
 		}
 	}
@@ -56,12 +57,21 @@ RowAndCol Utils::getIndexFromCoordinates(char *lettersArray, std::string coordin
 
 	if(numberCoords.at(0) == '0') {
 		numberCoords.erase(0, numberCoords.find_first_not_of('0'));
-		result.row = std::stoi(numberCoords) - 1;
-	} else {
-		result.row = std::stoi(numberCoords) -1;
 	}
 
+	try {
+		result.row = std::stoi(numberCoords) - 1;
+	} catch(...) {
+		result.row = 0;
+	}
+	
 	result.col = indexOfLetter;
 
 	return result;
+};
+
+int Utils::randomNumber(int range) {
+	//generates a unique seed based on the current time to ensure a 'random' number is generated.
+	srand(time(NULL));
+	return rand() % range;
 };
