@@ -20,24 +20,26 @@ class Board {
 			'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'N', 'M', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
 		};
 		
-		enum randomGenerationType {
-			COORD,
-			ORIENTATION
-		};
-
 		int height;
 		int width;
 		std::map<std::string, int> shipData;
 		std::vector<Ship*> placedShips = { }; 
 		bool isComputerBoard;
+		int playerNumber;
 
 	public: 
 
-		Board(int boardHeight, int  boardWidth, std::map<std::string, int> ships, bool isComputer) {
+		enum randomGenerationType {
+			COORD,
+			ORIENTATION
+		};
+
+		Board(int boardHeight, int  boardWidth, std::map<std::string, int> ships, bool isComputer, int player) {
 			height = boardHeight;
 			width = boardWidth;
 			shipData = ships;
 			isComputerBoard = isComputer;
+			playerNumber = player;
     }
 
 		void drawBoard(bool isInitalDraw);
@@ -47,4 +49,9 @@ class Board {
 		int handleBoatPlacementInput();
 		shipPlacementStatus attemptShipPlacement(std::string shipName, int shipLength, std::string coordinates, std::string orientation);
 		std::string generateRandomPlacement(randomGenerationType genType);
+		std::vector<Ship*> getPlacedShipData();
+		char * getColumnLetters();
+		std::vector< std::vector<std::string> > getBoard();
+		bool getIsComputerBoard();
+		int getPlayerNumber();
 };

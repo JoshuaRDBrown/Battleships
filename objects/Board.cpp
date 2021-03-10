@@ -45,6 +45,26 @@ std::map<std::string, int> Board::getShipData() {
  		return shipData;
 };
 
+std::vector<Ship*> Board::getPlacedShipData() {
+	return placedShips;
+};
+
+char * Board::getColumnLetters() {
+	return columnLetters;
+}
+
+std::vector< std::vector<std::string> > Board::getBoard() {
+	return matrix;
+}
+
+bool Board::getIsComputerBoard() {
+	return isComputerBoard;
+}
+
+int Board::getPlayerNumber() {
+	return playerNumber;
+}
+
 bool Board::coordinateIsValid(std::string coordinates) {
 	//TODO refactor so it deals with letters for bigger boards such as AA, AB
 	try {
@@ -173,6 +193,7 @@ int Board::handleBoatPlacementInput() {
 			return 0;
 		} else if(proceedInput == "N") {
 			matrix.clear();
+
 			handleBoatPlacementInput();
 		} else {
 			//TODO handle input

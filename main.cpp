@@ -57,8 +57,8 @@ int main() {
 
 	GameConfigDetails gameConfig = returnGameConfigDetails();
 
-	Board playerBoard(gameConfig.boardHeight, gameConfig.boardWidth, gameConfig.boatData, false);
-	Board computerBoard(gameConfig.boardHeight, gameConfig.boardWidth, gameConfig.boatData, true);
+	Board player1Board(gameConfig.boardHeight, gameConfig.boardWidth, gameConfig.boatData, false, 1);
+	Board player2Board(gameConfig.boardHeight, gameConfig.boardWidth, gameConfig.boatData, true, 2);
 
 	while(inputIsInvalid) {
 
@@ -72,7 +72,7 @@ int main() {
 		try {
 			switch(std::stoi(userInput)) {
 				case 1: {
-					GameHandler gameHandler(&playerBoard, &computerBoard);
+					GameHandler gameHandler(&player1Board, &player2Board);
 					gameHandler.setUp();
 					inputIsInvalid = false;
 				}
