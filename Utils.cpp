@@ -71,7 +71,26 @@ RowAndCol Utils::getIndexFromCoordinates(char *lettersArray, std::string coordin
 };
 
 int Utils::randomNumber(int range) {
-	//generates a unique seed based on the current time to ensure a 'random' number is generated.
-	srand(time(NULL));
+
 	return rand() % range;
 };
+
+std::vector<std::string> Utils::splitInputCoords(std::string coords) {
+
+	std::vector<std::string> listOfCoords = {};
+
+	std::string currentCoord;
+
+	for(char& c : coords) {
+		if(c == ' ') {
+			listOfCoords.push_back(currentCoord);
+			currentCoord = "";
+		} else {
+			currentCoord += c;
+		}
+	}
+
+	listOfCoords.push_back(currentCoord);
+
+	return listOfCoords;
+}

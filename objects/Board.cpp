@@ -85,7 +85,7 @@ bool Board::coordinateIsValid(std::string coordinates) {
 			try {
 				numberCoord = std::stoi(coordAsString);
 			} catch(...) {
-				return INVALID;
+				return false;
 			}
 
 		} else {
@@ -96,7 +96,7 @@ bool Board::coordinateIsValid(std::string coordinates) {
 			try {
 				numberCoord = std::stoi(concatCoord);
 			} catch(...) {
-				return INVALID;
+				return false;
 			}
 		}
 

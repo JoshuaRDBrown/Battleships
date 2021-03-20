@@ -9,4 +9,5 @@ class Utils {
 		std::string convertStringToUpperCase(std::string str);
 		RowAndCol getIndexFromCoordinates(char *columnLetters, std::string coordinates);
 		int randomNumber(int range);
+		std::vector<std::string> splitInputCoords(std::string coords);
 };

@@ -37,30 +37,90 @@ void GameHandler::attemptFireMissile(Board * currentPlayer, Board * opponent, Bo
 
 	Utils utils;
 
-	std::string coordinateToFireUpon;
-
-	//TODO add validation 
-
-	if(!currentPlayer->getIsComputerBoard()) {
-		currentPlayer->drawBoard();
-		currentPlayerHitBoard->drawBoard();
-		showShipStatus(currentPlayer);
-		std::cout << "\n" << currentPlayer->getPlayerName() << ", Please enter a location to fire (1A or press space for auto fire): ";
-		getline(std::cin, coordinateToFireUpon);
-	} 
-		
-	if(currentPlayer-> getIsComputerBoard() || coordinateToFireUpon.empty()) {
-		coordinateToFireUpon = currentPlayer->generateRandomPlacement(Board::COORD);
-	}
+	std::string coordinatesToFireUpon;
+	bool inputIsInvalid = true;
+	std::vector<std::string> errorMessageBody = {};
 	
-	if(coordinateToFireUpon.length() == 2) {
-		coordinateToFireUpon = "0" + coordinateToFireUpon;
-	}
+	int aliveShipAmount = currentPlayer->getPlacedShipData().size() - currentPlayer->getDestroyedShipAmount();
 
-	playerMissleHits.push_back(coordinateToFireUpon);
-	char * columnLetters = currentPlayer->getColumnLetters();
-	RowAndCol index = utils.getIndexFromCoordinates(columnLetters, coordinateToFireUpon);
-	fireMissile(index, currentPlayer, opponent, currentPlayerHitBoard);
+	std::cout << "Game Phase - Press Q to quit the game at any time";
+
+	currentPlayer->drawBoard();
+	currentPlayerHitBoard->drawBoard();
+	showShipStatus(currentPlayer);
+
+	while(inputIsInvalid) {
+		if(!currentPlayer->getIsComputerBoard()) {
+			
+			std::string salvoPrompt = ", Please enter " + std::to_string(aliveShipAmount) + " unique locations to fire upon(E.g 1A 5B 9D... or press enter to auto fire): ";
+			std::string normalPrompt = ", Please enter a location to fire (1A or press space for auto fire): ";
+
+			std::cout << "\n" << currentPlayer->getPlayerName();
+			std::cout << (selectedGameMode == SALVO ? salvoPrompt : normalPrompt);
+
+			getline(std::cin, coordinatesToFireUpon);
+		} 
+		
+		//TODO fix random fire
+		if(currentPlayer->getIsComputerBoard() || coordinatesToFireUpon.empty()) {
+			if(selectedGameMode == SALVO) {
+				for(int i = 0; i < aliveShipAmount; i++) {
+					std::string randomlyGeneratedCoord = currentPlayer->generateRandomPlacement(Board::COORD);
+					coordinatesToFireUpon = coordinatesToFireUpon + " " + randomlyGeneratedCoord;
+				}
+			} else {
+				coordinatesToFireUpon = currentPlayer->generateRandomPlacement(Board::COORD);
+			}
+		}
+
+		std::vector<std::string> missileLocations = utils.splitInputCoords(coordinatesToFireUpon);
+		
+		std::vector<RowAndCol> indexesToFireUpon = {};
+
+		for(int j = 0; j < missileLocations.size(); j++) {
+			if(missileLocations[j].length() == 2) {
+				missileLocations[j] = "0" + missileLocations[j];
+			}
+
+			bool coordIsValid = currentPlayer->coordinateIsValid(missileLocations[j]);
+
+			if(!coordIsValid) {
+				errorMessageBody.push_back("- Location is not a valid place on the board");
+			} else {
+				char * columnLetters = currentPlayer->getColumnLetters();
+				RowAndCol index = utils.getIndexFromCoordinates(columnLetters, missileLocations[j]);
+
+				std::string gridPosValue = currentPlayerHitBoard->getBoard()[index.row][index.col];
+
+				if(gridPosValue == "X" || gridPosValue == "O") {
+					errorMessageBody.push_back("- You have already fired a missle here");
+				} else {
+					indexesToFireUpon.push_back(index);
+				}
+
+				if(errorMessageBody.size() != 0) {
+					break;
+				}
+			}
+		}
+
+		if(errorMessageBody.size() == 0) {
+			inputIsInvalid = false;
+			std::cout << "\nTURN LOG: \n";
+			for(int i = 0; i < indexesToFireUpon.size(); i++) {
+				fireMissile(indexesToFireUpon[i], currentPlayer, opponent, currentPlayerHitBoard);
+			}
+
+		} else {
+			std::cout << "Invalid input - your input violated the following rules, please try again: \n";
+			for(int i = 0; i < errorMessageBody.size(); i++) {
+				std::cout << errorMessageBody[i] << "\n";
+			}
+			errorMessageBody.clear();
+		}
+	}
+	std::cout << "Press any key to continue";
+	std::cin.ignore();
 }
 
 void GameHandler::fireMissile(RowAndCol index, Board * currentPlayer, Board * opponent, Board * currentPlayerHitBoard) {
@@ -70,10 +130,8 @@ void GameHandler::fireMissile(RowAndCol index, Board * currentPlayer, Board * op
 
 	if(opponentMatrix[index.row][index.col] != " ") {
 
-		if(!currentPlayer->getIsComputerBoard()) {
-			std::cout << "Your missile has hit an enemy ship! \n";
-		}
-		
+		std::cout << (currentPlayer->getIsComputerBoard() ? "Computers missile hit one of your ships!\n" : "Your missile has hit an enemy ship!\n");
+
 		std::vector<Ship*> opponentShips = opponent->getPlacedShipData();
 
 		for(int i = 0; i < opponentShips.size(); i++) {
@@ -89,6 +147,7 @@ void GameHandler::fireMissile(RowAndCol index, Board * currentPlayer, Board * op
 				currentPlayerHitBoard->setMissleLocationOnHitGrid(index, "X");
 
 				if(opponentShips[i]->getIsShipDestroyed()) {
+					std::cout << "Your missile has destroyed an enemy ship!\n";
 					opponent->setDestroyedShipAmount();
 					checkIfGameEnd(opponent->getDestroyedShipAmount(), opponentShips.size());
 				}
@@ -96,9 +155,8 @@ void GameHandler::fireMissile(RowAndCol index, Board * currentPlayer, Board * op
 		}
 	} else {
 
-		if(!currentPlayer->getIsComputerBoard()) {
-			std::cout << "Your missile failed to hit an enemy ship. \n";
-		}
+		std::cout << (currentPlayer->getIsComputerBoard() ? "Computers missile failed to hit one of your ships.\n" : "Your missile failed to hit an enemy ship.\n");
+
 		currentPlayerHitBoard->setMissleLocationOnHitGrid(index, "O");
 	}
 }
@@ -122,25 +180,4 @@ void GameHandler::showShipStatus(Board * player) {
 
 		std::cout << placedShipData[i]->getShipName() << " | " << placedShipData[i]->getShipHealth() << "/" << placedShipData[i]->getShipLength() << " | " << destroyedStatus << "\n";
 	}
-}
-
-playerUniquePlacementStatus GameHandler::hasChoosenUniqueMissleFire(std::string coord) {
-
-	//infinite loop fix this
-
-	// if(playerMissleHits.empty()) {
-	// 	return YES;
-	// }
-
-	// for(int i = 0; i < playerMissleHits.size(); i++) {
-
-	// 	std::cout << "COORD: " << playerMissleHits[i];
-	// 	std::cout << "PLAYER COORD: " << coord;
-
-	// 	if(playerMissleHits[i] == coord) {
-	// 		return NO;
-	// 	}
-	// }
-
-	return YES;
 }
