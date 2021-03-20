@@ -25,7 +25,8 @@ class Board {
 		std::map<std::string, int> shipData;
 		std::vector<Ship*> placedShips = { }; 
 		bool isComputerBoard;
-		int playerNumber;
+		std::string name;
+		int destroyedShipAmount = 0;
 
 	public: 
 
@@ -34,15 +35,17 @@ class Board {
 			ORIENTATION
 		};
 
-		Board(int boardHeight, int  boardWidth, std::map<std::string, int> ships, bool isComputer, int player) {
+		Board(int boardHeight, int  boardWidth, std::map<std::string, int> ships, bool isComputer, std::string playerName) {
 			height = boardHeight;
 			width = boardWidth;
 			shipData = ships;
 			isComputerBoard = isComputer;
-			playerNumber = player;
+			name = playerName;
+
+			matrix.resize(width, std::vector<std::string>(height, " "));
     }
 
-		void drawBoard(bool isInitalDraw);
+		void drawBoard();
 		BoardDimensions getBoardDimensions();
 		std::map<std::string, int> getShipData();
 		bool coordinateIsValid(std::string coordinates);
@@ -53,5 +56,8 @@ class Board {
 		char * getColumnLetters();
 		std::vector< std::vector<std::string> > getBoard();
 		bool getIsComputerBoard();
-		int getPlayerNumber();
+		std::string getPlayerName();
+		int getDestroyedShipAmount();
+		void setDestroyedShipAmount();
+		void setMissleLocationOnHitGrid(RowAndCol index, std::string value);
 };

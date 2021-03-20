@@ -16,3 +16,15 @@ char Ship::getShipInitial() {
 bool Ship::getIsShipDestroyed() {
 	return isDestroyed;
 }
+
+std::string Ship::getShipName() {
+	return shipName;
+}
+
+int Ship::getShipHealth() {
+	return shipHealth;
+}
+
+int Ship::getShipLength() {
+	return shipLength;
+}

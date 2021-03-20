@@ -2,56 +2,71 @@
 #include "GameHandler.h"
 #include "../Utils.h"
 
-void GameHandler::setUp() {
-	player1->drawBoard(true);
-	player2->drawBoard(true);
-	promptMissileFire();
+int GameHandler::setUp() {
+	player1->drawBoard();
+	int p1CompletionStatus = player1->handleBoatPlacementInput();
+	if(p1CompletionStatus == -1) {
+		return -1;
+	}
+	int p2CompletionStatus = player2->handleBoatPlacementInput();
+
+	if(p2CompletionStatus == -1) {
+		return -1;
+	}
+
+	mainGameLoop();
+	return 0;
 }
 
-void GameHandler::promptMissileFire() {
+void GameHandler::mainGameLoop() {
 
-	Utils utils;
-
-	bool isGameInProgress = true;
-
-	int turnCount = 1;
-
-	std::string coordinateToFireUpon;
+	int turnCount = 0;
 
 	while(isGameInProgress) {
+		turnCount++;
 		//Using the result of turnCount modulo to determine which player class currently IS NOT the one playing
 		Board * currentPlayer = turnCount % 2 == 0 ? player2 : player1;
 		Board * opponent = turnCount % 2 == 0 ? player1 : player2;
+		Board * currentPlayerHitBoard = currentPlayer->getPlayerName() == "Player 1" ?  player1HB : player2HB;
 
-		if(!currentPlayer->getIsComputerBoard()) {
-			std::cout << "Please enter a location to fire (1A): ";
-			getline(std::cin, coordinateToFireUpon);
-
-			std::cout << coordinateToFireUpon;
-		} else {
-			coordinateToFireUpon = player1->generateRandomPlacement(Board::COORD);
-		}
-	
-		if(coordinateToFireUpon.length() == 2) {
-			coordinateToFireUpon = "0" + coordinateToFireUpon;
-		}
-
-		bool coordIsValid = player1->coordinateIsValid(coordinateToFireUpon);
-
-		if(coordIsValid) {
-			char * columnLetters = player1->getColumnLetters();
-			RowAndCol index = utils.getIndexFromCoordinates(columnLetters, coordinateToFireUpon);
-
-			fireMissile(index, currentPlayer, opponent);
-
-		}
-		turnCount++;
+		attemptFireMissile(currentPlayer, opponent, currentPlayerHitBoard);
 	}
 }
 
-void GameHandler::fireMissile(RowAndCol index, Board * currentPlayer, Board * opponent) {
+void GameHandler::attemptFireMissile(Board * currentPlayer, Board * opponent, Board * currentPlayerHitBoard) {
+
+	Utils utils;
+
+	std::string coordinateToFireUpon;
+
+	//TODO add validation 
+
+	if(!currentPlayer->getIsComputerBoard()) {
+		currentPlayer->drawBoard();
+		currentPlayerHitBoard->drawBoard();
+		showShipStatus(currentPlayer);
+		std::cout << "\n" << currentPlayer->getPlayerName() << ", Please enter a location to fire (1A or press space for auto fire): ";
+		getline(std::cin, coordinateToFireUpon);
+	} 
+		
+	if(currentPlayer-> getIsComputerBoard() || coordinateToFireUpon.empty()) {
+		coordinateToFireUpon = currentPlayer->generateRandomPlacement(Board::COORD);
+	}
+	
+	if(coordinateToFireUpon.length() == 2) {
+		coordinateToFireUpon = "0" + coordinateToFireUpon;
+	}
+
+	playerMissleHits.push_back(coordinateToFireUpon);
+	char * columnLetters = currentPlayer->getColumnLetters();
+	RowAndCol index = utils.getIndexFromCoordinates(columnLetters, coordinateToFireUpon);
+	fireMissile(index, currentPlayer, opponent, currentPlayerHitBoard);
+}
+
+void GameHandler::fireMissile(RowAndCol index, Board * currentPlayer, Board * opponent, Board * currentPlayerHitBoard) {
 
 	std::vector< std::vector<std::string> > opponentMatrix = opponent->getBoard();
+	std::vector< std::vector<std::string> > currentPlayerHitBoardMatrix = currentPlayerHitBoard->getBoard();
 
 	if(opponentMatrix[index.row][index.col] != " ") {
 
@@ -60,14 +75,9 @@ void GameHandler::fireMissile(RowAndCol index, Board * currentPlayer, Board * op
 		}
 		
 		std::vector<Ship*> opponentShips = opponent->getPlacedShipData();
-		int destroyedShipAmount = 0;
 
 		for(int i = 0; i < opponentShips.size(); i++) {
 			std::string shipInitalAsString;
-
-			if(opponentShips[i]->getIsShipDestroyed()) {
-				destroyedShipAmount++;
-			}
 
 			char shipInital = opponentShips[i]->getShipInitial();
 
@@ -75,9 +85,12 @@ void GameHandler::fireMissile(RowAndCol index, Board * currentPlayer, Board * op
 			 
 			if(opponentMatrix[index.row][index.col] == shipInitalAsString) {
 				opponentShips[i]->takeDamage();
+				opponent->setMissleLocationOnHitGrid(index, "X");
+				currentPlayerHitBoard->setMissleLocationOnHitGrid(index, "X");
 
 				if(opponentShips[i]->getIsShipDestroyed()) {
-					bool gameHasBeenWon = checkIfGameEnd(destroyedShipAmount, opponentShips.size());
+					opponent->setDestroyedShipAmount();
+					checkIfGameEnd(opponent->getDestroyedShipAmount(), opponentShips.size());
 				}
 			}
 		}
@@ -86,15 +99,48 @@ void GameHandler::fireMissile(RowAndCol index, Board * currentPlayer, Board * op
 		if(!currentPlayer->getIsComputerBoard()) {
 			std::cout << "Your missile failed to hit an enemy ship. \n";
 		}
+		currentPlayerHitBoard->setMissleLocationOnHitGrid(index, "O");
 	}
 }
 
-bool GameHandler::checkIfGameEnd(int opponentDestroyedShipAmount, int opponentPlacedShipAmount) {
+void GameHandler::checkIfGameEnd(int opponentDestroyedShipAmount, int opponentPlacedShipAmount) {
 
 	if(opponentPlacedShipAmount == opponentDestroyedShipAmount) {
-		return true;
+		isGameInProgress = false;
+		std::cout << "GAME WON!";
 	}
+}
 
-	return false;
+void GameHandler::showShipStatus(Board * player) {
 
+	std::vector<Ship*> placedShipData = player->getPlacedShipData();
+
+	std::cout << "Placed ship data: \n";
+
+	for(int i = 0; i < placedShipData.size(); i++) {
+		std::string destroyedStatus = placedShipData[i]->getIsShipDestroyed() ? "YES" : "NO";
+
+		std::cout << placedShipData[i]->getShipName() << " | " << placedShipData[i]->getShipHealth() << "/" << placedShipData[i]->getShipLength() << " | " << destroyedStatus << "\n";
+	}
+}
+
+playerUniquePlacementStatus GameHandler::hasChoosenUniqueMissleFire(std::string coord) {
+
+	//infinite loop fix this
+
+	// if(playerMissleHits.empty()) {
+	// 	return YES;
+	// }
+
+	// for(int i = 0; i < playerMissleHits.size(); i++) {
+
+	// 	std::cout << "COORD: " << playerMissleHits[i];
+	// 	std::cout << "PLAYER COORD: " << coord;
+
+	// 	if(playerMissleHits[i] == coord) {
+	// 		return NO;
+	// 	}
+	// }
+
+	return YES;
 }

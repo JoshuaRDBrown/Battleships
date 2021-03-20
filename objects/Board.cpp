@@ -1,11 +1,9 @@
 #include "Board.h"
 #include "../Utils.h"
 
-void Board::drawBoard(bool isInitialDraw) {
-	std::cout << "Your board: \n";
+void Board::drawBoard() {
+	std::cout << "\n" << name << "\n";
 
-	matrix.resize(width, std::vector<std::string>(height, " "));
-	
 	std::cout << "     ";
 	for (int i = 0; i < height; i ++) {
 		std::cout << columnLetters[i] << "   ";
@@ -24,11 +22,8 @@ void Board::drawBoard(bool isInitialDraw) {
 		for(int k = 0; k < height; k++){
 			std::cout << matrix[j][k] << " | ";
 		}
-		std::cout << std::endl;
-	}
 
-	if(isInitialDraw) {
-		handleBoatPlacementInput();
+		std::cout << std::endl;	
 	}
 }
 
@@ -61,8 +56,20 @@ bool Board::getIsComputerBoard() {
 	return isComputerBoard;
 }
 
-int Board::getPlayerNumber() {
-	return playerNumber;
+std::string Board::getPlayerName() {
+	return name;
+}
+
+int Board::getDestroyedShipAmount() {
+	return destroyedShipAmount;
+}
+
+void Board::setDestroyedShipAmount() {
+	destroyedShipAmount++;
+}
+
+void Board::setMissleLocationOnHitGrid(RowAndCol index, std::string value) {
+	matrix[index.row][index.col] = value;
 }
 
 bool Board::coordinateIsValid(std::string coordinates) {
@@ -122,7 +129,8 @@ int Board::handleBoatPlacementInput() {
 			std::string coordinates;
 
 			if(!isComputerBoard && !hasRequestedRandomCoord) {
-				std::cout << "Enter the coordinates for the " << shipName << " - " << "which has a length of " << std::to_string(shipLength) << "(E.g 1B or press enter for random generation): ";
+				std::cout << "SETUP PHASE - Press R to reset or Q to quit at anytime.";
+				std::cout << "\nEnter the coordinates for the " << shipName << " - " << "which has a length of " << std::to_string(shipLength) << "(E.g 1B or press enter for random generation): ";
 				getline(std::cin, coordinates);
 			}
 
@@ -131,6 +139,14 @@ int Board::handleBoatPlacementInput() {
 			if(coordinates.empty() || isComputerBoard) {
 				coordinates = generateRandomPlacement(COORD);
 				hasRequestedRandomCoord = true;
+			} else if(coordinates == "Q") {
+				std::cout << "Quitting game...\n";
+				return -1;
+			} else if(coordinates == "R") {
+				std::cout << "Resetting all ship locations\n";
+				matrix.clear();
+				matrix.resize(width, std::vector<std::string>(height, " "));
+				handleBoatPlacementInput();
 			} 
 			
 			if(coordinates.length() == 2) {
@@ -184,7 +200,7 @@ int Board::handleBoatPlacementInput() {
 
 	if(!isComputerBoard) {
 		std::string proceedInput;
-		std::cout << "Are you happy with all the locations of your ships? (Y - Proceed, N - Reset and place again)";
+		std::cout << "\nAre you happy with all the locations of your ships? (Y - Proceed, N - Reset and place again)";
 		getline(std::cin, proceedInput);
 
 		proceedInput = utils.convertStringToUpperCase(proceedInput);
@@ -193,7 +209,7 @@ int Board::handleBoatPlacementInput() {
 			return 0;
 		} else if(proceedInput == "N") {
 			matrix.clear();
-
+			matrix.resize(width, std::vector<std::string>(height, " "));
 			handleBoatPlacementInput();
 		} else {
 			//TODO handle input
@@ -243,7 +259,7 @@ shipPlacementStatus Board::attemptShipPlacement(std::string shipName, int shipLe
 
 	placedShips.push_back(new Ship{shipInitial, shipName, shipLength, coordIndex, orientation});
 
-	drawBoard(false);
+	drawBoard();
 
 	return VALID;
 };

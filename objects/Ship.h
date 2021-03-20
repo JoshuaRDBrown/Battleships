@@ -26,4 +26,7 @@ class Ship {
 		void takeDamage();
 		char getShipInitial();
 		bool getIsShipDestroyed();
+		std::string getShipName();
+		int getShipHealth();
+		int getShipLength();
 };
