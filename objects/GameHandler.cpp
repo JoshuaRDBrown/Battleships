@@ -80,8 +80,8 @@ void GameHandler::attemptFireMissile(Board * currentPlayer, Board * opponent, Bo
 		std::vector<RowAndCol> indexesToFireUpon = {};
 
 		for(int j = 0; j < missileLocations.size(); j++) {
-			if(missileLocations[j].length() == 2) {
-				missileLocations[j] = "0" + missileLocations[j];
+			if(!isdigit(coordinates.at(1))) {
+				coordinates = "0" + coordinates;
 			}
 
 			if(missileLocations[j].length() != 4) {
