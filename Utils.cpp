@@ -34,7 +34,7 @@ std::string Utils::convertStringToUpperCase(std::string str) {
 	return uppercaseString;      
 };
 
-RowAndCol Utils::getIndexFromCoordinates(char *lettersArray, std::string coordinates) {
+RowAndCol Utils::getIndexFromCoordinates(std::vector<std::string> lettersArray, std::string coordinates, int width) {
 
 	RowAndCol result;
 	int indexOfLetter;
@@ -42,8 +42,17 @@ RowAndCol Utils::getIndexFromCoordinates(char *lettersArray, std::string coordin
 
 	//Compares values in the letters array to the letter value inputted and records the index of a match
 
-	for(int i = 0; i < 26; i ++) {
-		if(lettersArray[i] == coordinates.at(2)) {
+	std::string letterCoords;
+
+	if(coordinates.at(3) != ' ') {
+		letterCoords += coordinates.at(2);
+		letterCoords += coordinates.at(3);
+	} else {
+		letterCoords += coordinates.at(2);
+	} 
+	
+	for(int i = 0; i < width; i ++) {
+		if(lettersArray[i] == letterCoords) {
 			indexOfLetter = i;
 		}
 	}

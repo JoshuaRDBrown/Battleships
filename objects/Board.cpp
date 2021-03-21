@@ -6,7 +6,12 @@ void Board::drawBoard() {
 
 	std::cout << "     ";
 	for (int i = 0; i < height; i ++) {
-		std::cout << columnLetters[i] << "   ";
+		if(i >= 25) {
+			std::cout << columnLetters[i] << "  ";
+		} else {
+			std::cout << columnLetters[i] << "   ";
+		}
+		
 	}
 
 	std::cout << std::endl;
@@ -44,7 +49,7 @@ std::vector<Ship*> Board::getPlacedShipData() {
 	return placedShips;
 };
 
-char * Board::getColumnLetters() {
+std::vector<std::string> Board::getColumnLetters() {
 	return columnLetters;
 }
 
@@ -73,7 +78,6 @@ void Board::setMissleLocationOnHitGrid(RowAndCol index, std::string value) {
 }
 
 bool Board::coordinateIsValid(std::string coordinates) {
-	//TODO refactor so it deals with letters for bigger boards such as AA, AB
 	try {
 
 		int numberCoord;
@@ -100,7 +104,7 @@ bool Board::coordinateIsValid(std::string coordinates) {
 			}
 		}
 
-		if(numberCoord <= height && !isdigit(coordinates.at(2))) {
+		if(numberCoord <= height && !isdigit(coordinates.at(2)) && !isdigit(coordinates.at(3))) {
 			return true;
 		}
 
@@ -149,8 +153,12 @@ int Board::handleBoatPlacementInput() {
 				handleBoatPlacementInput();
 			} 
 			
-			if(coordinates.length() == 2) {
+			if(!isdigit(coordinates.at(1))) {
 				coordinates = "0" + coordinates;
+			}
+
+			if(coordinates.length() != 4) {
+				coordinates = coordinates + " ";
 			}
 
 			bool coordIsValid = coordinateIsValid(coordinates);
@@ -225,7 +233,9 @@ shipPlacementStatus Board::attemptShipPlacement(std::string shipName, int shipLe
 
 	char shipInitial = shipName[0];
 
-	RowAndCol coordIndex = utils.getIndexFromCoordinates(columnLetters, coordinates);
+	RowAndCol coordIndex = utils.getIndexFromCoordinates(columnLetters, coordinates, width);
+
+	std::cout << coordIndex.row << "   " << coordIndex.col << "\n";
 
 	for(int i = 0; i < shipLength; i++) {
 
@@ -267,10 +277,9 @@ shipPlacementStatus Board::attemptShipPlacement(std::string shipName, int shipLe
 std::string Board::generateRandomPlacement(randomGenerationType genType) {
 
 	Utils utils; 
-	//TODO - refactor to work with bigger coords AA etc
 	if(genType == COORD) {
 		std::string randomNumber = std::to_string(utils.randomNumber(height));
-		char randomLetter = columnLetters[utils.randomNumber(width)];
+		std::string randomLetter = columnLetters[utils.randomNumber(width)];
 
 		return randomNumber + randomLetter;
 	} else {

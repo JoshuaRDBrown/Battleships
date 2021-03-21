@@ -45,9 +45,11 @@ void GameHandler::attemptFireMissile(Board * currentPlayer, Board * opponent, Bo
 
 	std::cout << "Game Phase - Press Q to quit the game at any time";
 
-	currentPlayer->drawBoard();
-	currentPlayerHitBoard->drawBoard();
-	showShipStatus(currentPlayer);
+	if(!currentPlayer->getIsComputerBoard()) {
+		currentPlayer->drawBoard();
+		currentPlayerHitBoard->drawBoard();
+		showShipStatus(currentPlayer);
+	}
 
 	while(inputIsInvalid) {
 		if(!currentPlayer->getIsComputerBoard()) {
@@ -82,13 +84,17 @@ void GameHandler::attemptFireMissile(Board * currentPlayer, Board * opponent, Bo
 				missileLocations[j] = "0" + missileLocations[j];
 			}
 
+			if(missileLocations[j].length() != 4) {
+				missileLocations[j] = missileLocations[j] + " ";
+			}
+
 			bool coordIsValid = currentPlayer->coordinateIsValid(missileLocations[j]);
 
 			if(!coordIsValid) {
 				errorMessageBody.push_back("- Location is not a valid place on the board");
 			} else {
-				char * columnLetters = currentPlayer->getColumnLetters();
-				RowAndCol index = utils.getIndexFromCoordinates(columnLetters, missileLocations[j]);
+				std::vector<std::string> columnLetters = currentPlayer->getColumnLetters();
+				RowAndCol index = utils.getIndexFromCoordinates(columnLetters, missileLocations[j], currentPlayer->getBoardDimensions().width);
 
 				std::string gridPosValue = currentPlayerHitBoard->getBoard()[index.row][index.col];
 

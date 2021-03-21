@@ -16,8 +16,8 @@ class Board {
 
 		std::vector< std::vector<std::string> > matrix;
 
-		char columnLetters[26] = {
-			'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'N', 'M', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+		std::vector<std::string> columnLetters = {
+			"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "N", "M", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"
 		};
 		
 		int height;
@@ -42,6 +42,21 @@ class Board {
 			isComputerBoard = isComputer;
 			name = playerName;
 
+			if(boardWidth > 26) {
+
+				int firstColumnLetterIndex = 0;
+
+				for(int i = 0; i < boardWidth - 26; i++) {
+
+					if(i % 26 == 0 && i != 0) {
+						firstColumnLetterIndex ++;
+					}
+					
+					std::string columnName = columnLetters[firstColumnLetterIndex] + columnLetters[i >= 26 ? i - 26 : i];
+					columnLetters.push_back(columnName);
+				}
+			}
+
 			matrix.resize(width, std::vector<std::string>(height, " "));
     }
 
@@ -53,7 +68,7 @@ class Board {
 		shipPlacementStatus attemptShipPlacement(std::string shipName, int shipLength, std::string coordinates, std::string orientation);
 		std::string generateRandomPlacement(randomGenerationType genType);
 		std::vector<Ship*> getPlacedShipData();
-		char * getColumnLetters();
+		std::vector<std::string> getColumnLetters();
 		std::vector< std::vector<std::string> > getBoard();
 		bool getIsComputerBoard();
 		std::string getPlayerName();
