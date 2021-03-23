@@ -30,9 +30,9 @@ class GameHandler {
 		}
 
 		int setUp();
-		void mainGameLoop();
-		void fireMissile(RowAndCol index, Board * currentPlayer, Board * opponent, Board * currentPlayerHitBoard);
+		int mainGameLoop();
+		void fireMissile(RowAndCol index, Board * currentPlayer, Board * opponent, Board * currentPlayerHitBoard, std::string missileLocation);
 		void attemptFireMissile(Board * currentPlayer, Board * opponent, Board * currentPlayerHitBoard);
-		void checkIfGameEnd(int opponentDestroyedShipAmount, int opponentPlacedShipAmount);
+		void checkIfGameEnd(int opponentDestroyedShipAmount, int opponentPlacedShipAmount, Board * currentPlayerHitBoard);
 		void showShipStatus(Board * player);
 };

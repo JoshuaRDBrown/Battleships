@@ -18,7 +18,9 @@ int GameHandler::setUp() {
 	return 0;
 }
 
-void GameHandler::mainGameLoop() {
+int GameHandler::mainGameLoop() {
+
+	Utils utils;
 
 	int turnCount = 0;
 
@@ -31,6 +33,21 @@ void GameHandler::mainGameLoop() {
 
 		attemptFireMissile(currentPlayer, opponent, currentPlayerHitBoard);
 	}
+
+	std::string playAgain;
+	std::cout << "Would you like to play again? (Y/N): ";
+	getline(std::cin, playAgain);
+
+	playAgain = utils.convertStringToUpperCase(playAgain);
+
+	if(playAgain == "Y") {
+		setUp();
+	} else if(playAgain == "N") {
+		std::cout << "Goodbye...\n";
+		exit(0);
+	}
+
+	return 1;
 }
 
 void GameHandler::attemptFireMissile(Board * currentPlayer, Board * opponent, Board * currentPlayerHitBoard) {
@@ -61,14 +78,18 @@ void GameHandler::attemptFireMissile(Board * currentPlayer, Board * opponent, Bo
 			std::cout << (selectedGameMode == SALVO ? salvoPrompt : normalPrompt);
 
 			getline(std::cin, coordinatesToFireUpon);
-		} 
+			coordinatesToFireUpon = utils.convertStringToUpperCase(coordinatesToFireUpon);
+		}
 		
-		//TODO fix random fire
 		if(currentPlayer->getIsComputerBoard() || coordinatesToFireUpon.empty()) {
-			if(selectedGameMode == SALVO) {
+			if(selectedGameMode == SALVO) { 
 				for(int i = 0; i < aliveShipAmount; i++) {
 					std::string randomlyGeneratedCoord = currentPlayer->generateRandomPlacement(Board::COORD);
-					coordinatesToFireUpon = coordinatesToFireUpon + " " + randomlyGeneratedCoord;
+					if(i != 0) {
+						coordinatesToFireUpon += " " + randomlyGeneratedCoord;
+					} else {
+						coordinatesToFireUpon += randomlyGeneratedCoord;
+					}
 				}
 			} else {
 				coordinatesToFireUpon = currentPlayer->generateRandomPlacement(Board::COORD);
@@ -80,12 +101,16 @@ void GameHandler::attemptFireMissile(Board * currentPlayer, Board * opponent, Bo
 		std::vector<RowAndCol> indexesToFireUpon = {};
 
 		for(int j = 0; j < missileLocations.size(); j++) {
-			if(!isdigit(coordinates.at(1))) {
-				coordinates = "0" + coordinates;
+			if(!isdigit(missileLocations[j].at(1))) {
+				missileLocations[j] = "0" + missileLocations[j];
 			}
-
+			
 			if(missileLocations[j].length() != 4) {
 				missileLocations[j] = missileLocations[j] + " ";
+			}
+
+			if((selectedGameMode == SALVO && indexesToFireUpon.size() > aliveShipAmount) || (selectedGameMode == NORMAL && missileLocations.size() != 1)) {
+				errorMessageBody.push_back("- You have enter too many locations.");
 			}
 
 			bool coordIsValid = currentPlayer->coordinateIsValid(missileLocations[j]);
@@ -114,13 +139,15 @@ void GameHandler::attemptFireMissile(Board * currentPlayer, Board * opponent, Bo
 			inputIsInvalid = false;
 			std::cout << "\nTURN LOG: \n";
 			for(int i = 0; i < indexesToFireUpon.size(); i++) {
-				fireMissile(indexesToFireUpon[i], currentPlayer, opponent, currentPlayerHitBoard);
+				fireMissile(indexesToFireUpon[i], currentPlayer, opponent, currentPlayerHitBoard, missileLocations[i]);
 			}
 
 		} else {
-			std::cout << "Invalid input - your input violated the following rules, please try again: \n";
-			for(int i = 0; i < errorMessageBody.size(); i++) {
-				std::cout << errorMessageBody[i] << "\n";
+			if(!currentPlayer->getIsComputerBoard()) {
+				std::cout << "Invalid input - your input violated the following rules, please try again: \n";
+				for(int i = 0; i < errorMessageBody.size(); i++) {
+					std::cout << errorMessageBody[i] << "\n";
+				}
 			}
 			errorMessageBody.clear();
 		}
@@ -129,14 +156,17 @@ void GameHandler::attemptFireMissile(Board * currentPlayer, Board * opponent, Bo
 	std::cin.ignore();
 }
 
-void GameHandler::fireMissile(RowAndCol index, Board * currentPlayer, Board * opponent, Board * currentPlayerHitBoard) {
+void GameHandler::fireMissile(RowAndCol index, Board * currentPlayer, Board * opponent, Board * currentPlayerHitBoard, std::string missileLocation) {
 
 	std::vector< std::vector<std::string> > opponentMatrix = opponent->getBoard();
 	std::vector< std::vector<std::string> > currentPlayerHitBoardMatrix = currentPlayerHitBoard->getBoard();
 
 	if(opponentMatrix[index.row][index.col] != " ") {
 
-		std::cout << (currentPlayer->getIsComputerBoard() ? "Computers missile hit one of your ships!\n" : "Your missile has hit an enemy ship!\n");
+		std::string playerLog =  "Your missile has hit an enemy ship at " + missileLocation + "\n";
+		std::string computerLog = "Computers missile hit one of your ships!\n";
+
+		std::cout << (currentPlayer->getIsComputerBoard() ? computerLog : playerLog);
 
 		std::vector<Ship*> opponentShips = opponent->getPlacedShipData();
 
@@ -155,7 +185,7 @@ void GameHandler::fireMissile(RowAndCol index, Board * currentPlayer, Board * op
 				if(opponentShips[i]->getIsShipDestroyed()) {
 					std::cout << "Your missile has destroyed an enemy ship!\n";
 					opponent->setDestroyedShipAmount();
-					checkIfGameEnd(opponent->getDestroyedShipAmount(), opponentShips.size());
+					checkIfGameEnd(opponent->getDestroyedShipAmount(), opponentShips.size(), currentPlayer);
 				}
 			}
 		}
@@ -167,11 +197,12 @@ void GameHandler::fireMissile(RowAndCol index, Board * currentPlayer, Board * op
 	}
 }
 
-void GameHandler::checkIfGameEnd(int opponentDestroyedShipAmount, int opponentPlacedShipAmount) {
+void GameHandler::checkIfGameEnd(int opponentDestroyedShipAmount, int opponentPlacedShipAmount, Board * currentPlayerBoard) {
 
 	if(opponentPlacedShipAmount == opponentDestroyedShipAmount) {
 		isGameInProgress = false;
-		std::cout << "GAME WON!";
+		std::string winningText = currentPlayerBoard->getIsComputerBoard() ? "The computer has won!\n" : currentPlayerBoard->getPlayerName() + " has won!\n"; 
+		std::cout << winningText;
 	}
 }
 
@@ -182,8 +213,6 @@ void GameHandler::showShipStatus(Board * player) {
 	std::cout << "Placed ship data: \n";
 
 	for(int i = 0; i < placedShipData.size(); i++) {
-		std::string destroyedStatus = placedShipData[i]->getIsShipDestroyed() ? "YES" : "NO";
-
-		std::cout << placedShipData[i]->getShipName() << " | " << placedShipData[i]->getShipHealth() << "/" << placedShipData[i]->getShipLength() << " | " << destroyedStatus << "\n";
+		std::cout << placedShipData[i]->getShipName() << " | " << placedShipData[i]->getShipHealth() << "/" << placedShipData[i]->getShipLength() << " |" << "\n";
 	}
 }

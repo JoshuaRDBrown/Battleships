@@ -88,7 +88,7 @@ bool Board::coordinateIsValid(std::string coordinates) {
 
 			try {
 				numberCoord = std::stoi(coordAsString);
-			} catch(...) {
+			} catch(const std::exception& e) {
 				return false;
 			}
 
@@ -107,7 +107,6 @@ bool Board::coordinateIsValid(std::string coordinates) {
 		if(numberCoord <= height && !isdigit(coordinates.at(2)) && !isdigit(coordinates.at(3))) {
 			return true;
 		}
-
 		return false;
 	} catch(...) {
 		return false;
@@ -145,7 +144,7 @@ int Board::handleBoatPlacementInput() {
 				hasRequestedRandomCoord = true;
 			} else if(coordinates == "Q") {
 				std::cout << "Quitting game...\n";
-				return -1;
+				exit(0);
 			} else if(coordinates == "R") {
 				std::cout << "Resetting all ship locations\n";
 				matrix.clear();
@@ -208,19 +207,26 @@ int Board::handleBoatPlacementInput() {
 
 	if(!isComputerBoard) {
 		std::string proceedInput;
-		std::cout << "\nAre you happy with all the locations of your ships? (Y - Proceed, N - Reset and place again)";
-		getline(std::cin, proceedInput);
+		bool inputIsInvalid = true;
 
-		proceedInput = utils.convertStringToUpperCase(proceedInput);
+		while(inputIsInvalid) {
+			
+			std::cout << "\nAre you happy with all the locations of your ships? (Y - Proceed, N - Reset and place again)";
+			getline(std::cin, proceedInput);
 
-		if(proceedInput == "Y") {
-			return 0;
-		} else if(proceedInput == "N") {
-			matrix.clear();
-			matrix.resize(width, std::vector<std::string>(height, " "));
-			handleBoatPlacementInput();
-		} else {
-			//TODO handle input
+			proceedInput = utils.convertStringToUpperCase(proceedInput);
+
+			if(proceedInput == "Y") {
+				inputIsInvalid = false;
+				return 0;
+			} else if(proceedInput == "N") {
+				matrix.clear();
+				inputIsInvalid = false;
+				matrix.resize(width, std::vector<std::string>(height, " "));
+				handleBoatPlacementInput();
+			} else {
+				std::cout << "Please choose a valid option (Y/N)";
+			}
 		}
 	}
 
@@ -234,8 +240,6 @@ shipPlacementStatus Board::attemptShipPlacement(std::string shipName, int shipLe
 	char shipInitial = shipName[0];
 
 	RowAndCol coordIndex = utils.getIndexFromCoordinates(columnLetters, coordinates, width);
-
-	std::cout << coordIndex.row << "   " << coordIndex.col << "\n";
 
 	for(int i = 0; i < shipLength; i++) {
 
@@ -269,7 +273,10 @@ shipPlacementStatus Board::attemptShipPlacement(std::string shipName, int shipLe
 
 	placedShips.push_back(new Ship{shipInitial, shipName, shipLength, coordIndex, orientation});
 
-	drawBoard();
+	if(!isComputerBoard) {
+		drawBoard();
+	}
+
 
 	return VALID;
 };
@@ -280,6 +287,10 @@ std::string Board::generateRandomPlacement(randomGenerationType genType) {
 	if(genType == COORD) {
 		std::string randomNumber = std::to_string(utils.randomNumber(height));
 		std::string randomLetter = columnLetters[utils.randomNumber(width)];
+
+		if(randomNumber == "0") {
+			randomNumber = std::to_string(utils.randomNumber(height));
+		}
 
 		return randomNumber + randomLetter;
 	} else {

@@ -27,21 +27,40 @@ GameConfigDetails returnGameConfigDetails() {
 		while(getline(configFile, line)) {
 			std::vector<std::string> data = utils.parseGameConfigFile(line, "=");
 			if(data[0] != "Board") {
-				boatData.insert(std::pair<std::string,int>(data[0], std::stoi(data[1]))); 
+				try {
+					boatData.insert(std::pair<std::string,int>(data[0], std::stoi(data[1]))); 
+				} catch(...) {
+					throw std::invalid_argument("ERROR: Boat values must be numbers.");
+				}
 			} else {
-				data[1].erase(std::remove(data[1].begin(), data[1].end(), 'x'), data[1].end());
 
-				auto formattedBoardHeight = std::string(1,data[1].at(0))+data[1].at(1);
-				auto formattedBoardWidth = std::string(1,data[1].at(2))+data[1].at(3);
+				bool hasGotHeight = false;
+				std::string height;
+				std::string width;
+
+				for(int i=0; i < data[1].length(); i++) {
+					if(data[1].at(i) == 'x' || hasGotHeight) {
+						hasGotHeight = true;
+						width += data[1].at(i);
+					} else {
+						height += data[1].at(i);
+					}
+				}
+
+				width.erase(std::remove(width.begin(), width.end(), 'x'), width.end());
 
 				try {
-					int boardHeight = std::stoi(formattedBoardHeight);
-					int boardWidth = std::stoi(formattedBoardWidth);
+					int boardHeight = std::stoi(height);
+					int boardWidth = std::stoi(width);
+
+					if((boardHeight > 80 || boardWidth > 80) || boardHeight < 5 || boardWidth < 5) {
+						throw;
+					}
 
 					gameData.boardHeight = boardHeight;
 					gameData.boardWidth = boardWidth;
 				} catch(...) {
-					throw std::invalid_argument("Config file is incorrect.");
+					throw std::invalid_argument("ERROR: Config file data is incorrect.");
 				}
 			}
 		}
