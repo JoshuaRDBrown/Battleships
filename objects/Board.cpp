@@ -88,7 +88,7 @@ bool Board::coordinateIsValid(std::string coordinates) {
 
 			try {
 				numberCoord = std::stoi(coordAsString);
-			} catch(const std::exception& e) {
+			} catch(...) {
 				return false;
 			}
 
@@ -150,12 +150,16 @@ int Board::handleBoatPlacementInput() {
 				matrix.clear();
 				matrix.resize(width, std::vector<std::string>(height, " "));
 				handleBoatPlacementInput();
-			} 
-			
-			if(!isdigit(coordinates.at(1))) {
-				coordinates = "0" + coordinates;
 			}
 
+			if(coordinates.length() >= 2) {
+				if(!isdigit(coordinates.at(1))) {
+					coordinates = "0" + coordinates;
+				}
+			} else {
+				errorMessageBody.push_back("- The coordinates were not long enough.");
+			}
+			
 			if(coordinates.length() != 4) {
 				coordinates = coordinates + " ";
 			}
@@ -273,9 +277,7 @@ shipPlacementStatus Board::attemptShipPlacement(std::string shipName, int shipLe
 
 	placedShips.push_back(new Ship{shipInitial, shipName, shipLength, coordIndex, orientation});
 
-	if(!isComputerBoard) {
-		drawBoard();
-	}
+	drawBoard();
 
 
 	return VALID;

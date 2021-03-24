@@ -75,10 +75,10 @@ GameConfigDetails returnGameConfigDetails() {
 int initialisePlayerBoards(int boardHeight, int boardWidth, std::map<std::string, int> boatData, bool isAgainstComputer, GameMode gameMode) {
 	
 	Board player1Board(boardHeight, boardWidth, boatData, false, "Player 1");
-	Board player2Board(boardHeight, boardWidth, boatData, isAgainstComputer, "Player 2");
+	Board player2Board(boardHeight, boardWidth, boatData, isAgainstComputer, isAgainstComputer ? "Computer" : "Player 2");
 
 	Board player1HitBoard(boardHeight, boardWidth, boatData, false, "Player 1's hit board");
-	Board player2HitBoard(boardHeight, boardWidth, boatData, isAgainstComputer, "Player 2's hit board");
+	Board player2HitBoard(boardHeight, boardWidth, boatData, isAgainstComputer, isAgainstComputer ? "Computers hit board" : "Player 2's hit board");
 
 	GameHandler gameHandler(&player1Board, &player2Board, &player1HitBoard, &player2HitBoard, gameMode);
 	int setUpStatus = gameHandler.setUp();
@@ -110,20 +110,24 @@ int main() {
 
 		getline(std::cin, userInput);
 
-		try {
-			switch(std::stoi(userInput)) {
-				case 1: initialisePlayerBoards(gameConfig.boardHeight, gameConfig.boardWidth, gameConfig.boatData, true, NORMAL);
-				case 2: initialisePlayerBoards(gameConfig.boardHeight, gameConfig.boardWidth, gameConfig.boatData, false, NORMAL);
-				case 3: initialisePlayerBoards(gameConfig.boardHeight, gameConfig.boardWidth, gameConfig.boatData, true, SALVO);
-				case 4: initialisePlayerBoards(gameConfig.boardHeight, gameConfig.boardWidth, gameConfig.boatData, false, SALVO);					
-				case 5: return 0; 
-				default: throw std::invalid_argument("");
-			}
+		int userInputAsNumber;
 
-			inputIsInvalid = false;
+		try {
+			userInputAsNumber = std::stoi(userInput);
 		} catch(...) {
-			std::cout << "Please select a valid option \n";
+			std::cout << "Please enter a valid input\n";
 		}
+
+		switch(userInputAsNumber) {
+			case 1: initialisePlayerBoards(gameConfig.boardHeight, gameConfig.boardWidth, gameConfig.boatData, true, NORMAL);
+			case 2: initialisePlayerBoards(gameConfig.boardHeight, gameConfig.boardWidth, gameConfig.boatData, false, NORMAL);
+			case 3: initialisePlayerBoards(gameConfig.boardHeight, gameConfig.boardWidth, gameConfig.boatData, true, SALVO);
+			case 4: initialisePlayerBoards(gameConfig.boardHeight, gameConfig.boardWidth, gameConfig.boatData, false, SALVO);	
+			case 5: return 0; 
+			default: main();
+		}
+
+		inputIsInvalid = false;
 	}
 	return 0;
 }

@@ -62,11 +62,9 @@ void GameHandler::attemptFireMissile(Board * currentPlayer, Board * opponent, Bo
 
 	std::cout << "Game Phase - Press Q to quit the game at any time";
 
-	if(!currentPlayer->getIsComputerBoard()) {
-		currentPlayer->drawBoard();
-		currentPlayerHitBoard->drawBoard();
-		showShipStatus(currentPlayer);
-	}
+	currentPlayer->drawBoard();
+	currentPlayerHitBoard->drawBoard();
+	showShipStatus(currentPlayer);
 
 	while(inputIsInvalid) {
 		if(!currentPlayer->getIsComputerBoard()) {
