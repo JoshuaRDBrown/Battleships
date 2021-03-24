@@ -71,6 +71,289 @@ To keep this project managable and easy to follow. I have split up the workload 
 * EPIC 9 - Add Mines
 
 ## Object-Oriented design ideas
+As stated before, I have seperated each game functions such as rendering the board or holding the ship information to different classes. I believe classes should be dynamic and reusable. This helps as the users need 4 boards (2 hit boards and 2 normal boards) as well as 5 + ships for each player which needs to be stored. This is where we will really see the benefit of Object Oriented design as it helps keep track of all of these different data in a readible and concise way. 
 
+My plan is that ship class instances will live in the board class matrix. This allows constant and easy access to set / get it's current values and removes the problem of data being outdated or out of sync. Using this will also make it easier to integrate the other game modes later on as it will all inherit this logic. 
 
+# Development
 
+# Good programming standards 
+
+Good programming pratice is important for so many reasons. Firstly it allows you to build more robust and safe systems which are relatively bug free and work exactly how the developer intends them too. As well as this, well written code is easy to read which means that when another developer comes along to make changes to your code, they can easily understand what is going on. Without this, code can become unmaintainable and it can become really hard or really hacky to impliment new features. This has the benefit of reducing development and code renovation time in the future, future proofing the software. 
+
+Some key programming standards I will follow in this project are : 
+
+* DRY - Don't repeat yourself. There are some exceptions to this rule as sometimes it's important to choose readibility over repeated logic as abstracted logic can be hard to follow and it can get confusing if you have to read multiple layers of files to get to the source of some logic 10 files deep. 
+
+* Clear and obvious variable and functions name - Another one for readibility, I will make sure my variable and function names fully reflect their purpose. 
+
+* Code re-use - Where possible, I will try to re use as much logic as I can. This is my action plan with the `Utils` class as it will store lots of reuseable logic which otherwise would be repeated in the codebase many times. 
+
+* Code refactoring - It's important to read the code you've written and look for changes / improvements. There's always a better way to approach a solution. It's a good thing to just get it working first but it is just as important you come back and polish it up into a nice looking logical solution. 
+
+# Development part 1 - Menu and game config parseing 
+
+## Implimentation
+
+The first component I decided to build was the menu and config, this makes sense as it is the entry point of the game and everything will be actioned from this screen and the whole game will be affected by the config. 
+
+I did this by parsing the data in the file by seperating by the equals sign in the file: 
+
+```C++ 
+if(data[0] != "Board") {
+				try {
+					boatData.insert(std::pair<std::string,int>(data[0], std::stoi(data[1]))); 
+				} catch(...) {
+					throw std::invalid_argument("ERROR: Boat values must be numbers.");
+				}
+			} else {
+
+				bool hasGotHeight = false;
+				std::string height;
+				std::string width;
+
+				for(int i=0; i < data[1].length(); i++) {
+					if(data[1].at(i) == 'x' || hasGotHeight) {
+						hasGotHeight = true;
+						width += data[1].at(i);
+					} else {
+						height += data[1].at(i);
+					}
+				}
+ ```
+ 
+ How this works is, if the config element is not the board it has to be a boat. The code tries to store the boat name and boat length in a key-value `pair` which we then will pass to the Board and Ship classes later on so they can use this data. If the data is the board, we split the height and the width by searching for the "by" symbol and splitting it that way. 
+
+I created the menu by using a simple switch statement which numbers correspond to a number in the UI, which depending on which number the user picks, generates new boards for that given gamemode: 
+
+```C++
+switch(std::stoi(userInput)) {
+	case 1: initialisePlayerBoards(gameConfig.boardHeight, gameConfig.boardWidth, gameConfig.boatData, true, NORMAL);
+	case 2: initialisePlayerBoards(gameConfig.boardHeight, gameConfig.boardWidth, gameConfig.boatData, false, NORMAL);
+	case 3: initialisePlayerBoards(gameConfig.boardHeight, gameConfig.boardWidth, gameConfig.boatData, true, SALVO);
+	case 4: initialisePlayerBoards(gameConfig.boardHeight, gameConfig.boardWidth, gameConfig.boatData, false, SALVO);					
+	case 5: return 0; 
+	default: throw std::invalid_argument("");
+}
+```
+
+As you can see, depending on which option the user chooses, the game initialises player boards with the configs `boardHeight` and `boardWidth`, if a computer board will be needed and if the game mode is normal or salvo. 
+
+`initalisePlayerBoards` is a function which takes this data and creates new instances of my Board class (which I implimented next) and passes all of the game config details to the `Board`. After the boards have been init'd. The references to these classes are then passed to my `GameHandler` class which will handle the game flow. Finally gameHandlers `setUp()` function is called so that the user can start to place ships. 
+
+```C++ 
+int initialisePlayerBoards(int boardHeight, int boardWidth, std::map<std::string, int> boatData, bool isAgainstComputer, GameMode gameMode) {
+	
+	Board player1Board(boardHeight, boardWidth, boatData, false, "Player 1");
+	Board player2Board(boardHeight, boardWidth, boatData, isAgainstComputer, "Player 2");
+
+	Board player1HitBoard(boardHeight, boardWidth, boatData, false, "Player 1's hit board");
+	Board player2HitBoard(boardHeight, boardWidth, boatData, isAgainstComputer, "Player 2's hit board");
+
+	GameHandler gameHandler(&player1Board, &player2Board, &player1HitBoard, &player2HitBoard, gameMode);
+	int setUpStatus = gameHandler.setUp();
+```
+
+## Code review 
+
+I think the above code makes sense to begin the project with. Not only does it future proof the game (by dynmically allowing the addition of more gamemodes and board dimensions) but it is also easy to read what is going on because of how I've created functions to handle logic in small reusable formats. 
+
+I think this was a good decision because it allowed me to start off being dynamic which paved the way to continue the project in a similar manor.
+
+## Changes 
+
+A change I had to make was having to refactor the parsing logic for the board. I found an issue where smaller boards (such as 5x5) broke the game due to index being out of range. This was because I was explicitly looking for 2 numbers for each side and when that second index didn't exist, it would throw an `out_of_range` error: 
+ 
+ ```C++ 
+ std::string boardHeight = std::to_string(data[1].at(0) + data[1].at(1) 
+ std::string boardWidth = std::to_string(data[1].at(2) + data[1].at(3) 
+ ```
+ 
+The fix for this you saw previously, I looped through the string and stored the data dynamically, anything before the "x" was the height and anything after would be width allowing it to be any length (Although I do check if it's over 80 or under 5 as stated in the brief). 
+
+# Development part 2 - Board 
+
+The next part of the game I built out was the `Board` class. The board class handles quite a lot of logic, the first thing I built out was the ability to display a grid on the screen. I used a `std::vector<std::vector<std::string>>` or a 2D vector to store the grid positions and boat positions in. The width and height was set dynamically on init: 
+
+```C++ 
+			if(boardWidth > 26) {
+
+				int firstColumnLetterIndex = 0;
+
+				for(int i = 0; i < boardWidth - 26; i++) {
+
+					if(i % 26 == 0 && i != 0) {
+						firstColumnLetterIndex ++;
+					}
+					
+					std::string columnName = columnLetters[firstColumnLetterIndex] + columnLetters[i >= 26 ? i - 26 : i];
+					columnLetters.push_back(columnName);
+				}
+			}
+
+			matrix.resize(width, std::vector<std::string>(height, " "));
+    }
+```
+
+The first bit of logic creates the column names, if the column index is further than the amount of alphabetical characters in the alphabet, we add the first letter of the alphabet to the end and loop again and again until ZZ (Which is way more columns than the game allows anyway).
+
+The last bit of logic `matrix.resize(width, std::vector<std::string>(height, " "));` is the most important part here, it resizes the matrix to the config width and height and fills those indexes with a `" "` (which will be changed to boats or hits later on).
+
+I then loop through this matrix using the following code: 
+
+```C++
+void Board::drawBoard() {
+	std::cout << "\n" << name << "\n";
+
+	std::cout << "     ";
+	for (int i = 0; i < height; i ++) {
+		if(i >= 25) {
+			std::cout << columnLetters[i] << "  ";
+		} else {
+			std::cout << columnLetters[i] << "   ";
+		}
+		
+	}
+
+	std::cout << std::endl;
+
+	for(int j = 0; j < width; j++) {
+			
+		if(j < 9) {
+			std::cout << " " << j + 1 << " | ";
+		} else {
+			std::cout << j + 1 << " | ";
+		}
+			
+		for(int k = 0; k < height; k++){
+			std::cout << matrix[j][k] << " | ";
+		}
+
+		std::cout << std::endl;	
+	}
+}
+```
+Which renders a board with numbers row and alphabetical collumns by looping through each vector. Which produces this output: 
+
+```Shell 
+     A   B   C   D   E   F   G   H   I   J   
+ 1 |   |   |   |   |   |   |   |   |   |   | 
+ 2 |   |   |   |   |   |   |   |   |   |   | 
+ 3 |   |   |   |   |   |   |   |   |   |   | 
+ 4 |   |   |   |   |   |   |   |   |   |   | 
+ 5 |   |   |   |   |   |   |   |   |   |   | 
+ 6 |   |   |   |   |   |   |   |   |   |   | 
+ 7 |   |   |   |   |   |   |   |   |   |   | 
+ 8 |   |   |   |   |   |   |   |   |   |   | 
+ 9 |   |   |   |   |   |   |   |   |   |   | 
+10 |   |   |   |   |   |   |   |   |   |   | 
+```
+
+## Code review
+
+I think this part was pretty easy to do. There are not too many ways you can render a grid so I believe looping through a 2D vector was probably best practice in this approach. It also gave me the option to use nice C++ API's such a `Vector.resize` which made it even easier to dynamically set the size and the data inside of the grid instead of having to push the rows mannually which was really nice. 
+
+## Changes
+
+The only change I made here was that I was originally using a 2D array with a fix height and width of 10, which of course would not help me when trying to make it dynamic so I changed and opted for a 2D vector afterwards to fix this. 
+
+# Development part 3 - Ship placement
+
+The `Ship` class is probably the least complex class as it only has 1 function and the rest are get methods. I think I used the `Ship` class more of a structure / data store as I was reading data a lot but rarely writing to it. I need to know the following things about a Ship: 
+
+* It's name (BattleShip, Carrier etc) 
+* It's length
+* It's health
+* The position of the ship on the grid
+* If the ship is destroyed
+
+The first two points I get from the config file, which is pretty easy to store, the rest I have to take from the user and calculate myself. To get the ships position, I went to my `Board` class and wrote some input statements so that the user had the ability to enter data for their ship location like so: 
+
+```C++ 
+std::cout << "SETUP PHASE - Press R to reset or Q to quit at anytime.";
+std::cout << "\nEnter the coordinates for the " << shipName << " - " << "which has a length of " << std::to_string(shipLength) << "(E.g 1B or press enter for random generation): ";
+getline(std::cin, coordinates);
+```
+
+After verifying this logic (by checking it's the correct length, the correct format and is actually a place on the board) I then set the Ship placement on the `Board` by adding the ships initial to be placed at that index. This is a loop so this will do this while increasing the index by 1 for the length of the ship: 
+
+```C++ 
+if(matrix[coordIndex.row][coordIndex.col + i] == " ") {
+	matrix[coordIndex.row][coordIndex.col + i] = shipInitial;
+} else {
+	return INVALID;
+}
+```
+After this, all that data is then stored in a new `Ship` instance which is then pushed to a vector of `Ship` instances where all this data can be accessed in the `Board` class: 
+
+```C++ 
+placedShips.push_back(new Ship{shipInitial, shipName, shipLength, coordIndex, orientation});
+```
+
+After this I added some get methods to the `Ship` class to make it easy to get certain data about a specific instance and added a function which takes away some health (which should be called later if part of the ship has been hit): 
+
+```C++ 
+void Ship::takeDamage() {
+	shipHealth = shipHealth -1;
+
+	if(shipHealth == 0) {
+		isDestroyed = true;
+	}
+}
+
+char Ship::getShipInitial() {
+	return shipInitial;
+}
+
+bool Ship::getIsShipDestroyed() {
+	return isDestroyed;
+}
+
+std::string Ship::getShipName() {
+	return shipName;
+}
+```
+
+## Code review
+
+I liked this approach as it was simple and easy to understand. It could be a bit complex for new programmers but this is one of the fundermental skills and benefits of Object-Oriented programming. This follows good practices of class prototyping to make it easy to transfer data between classes and functions. 
+
+## Changes 
+
+I began by trying to store the data of the `Ship` in the board, but then I realised this means that the ship data would be confined to the `Board` class and it wouldn't be able to be easily accessed elsewhere. That's when I decided to then put them into a vector which has a getter to be retrived throughout my application. 
+
+# Development 4 - Game loop
+
+The final part of development was defining the game loop. This was pretty simple as it just requires the same logic to be ran over and over until a winner breaks this loop. How this works is I create a while loop which ran the following logic: 
+
+``` C++ 
+		Board * currentPlayer = turnCount % 2 == 0 ? player2 : player1;
+		Board * opponent = turnCount % 2 == 0 ? player1 : player2;
+		Board * currentPlayerHitBoard = currentPlayer->getPlayerName() == "Player 1" ?  player1HB : player2HB;
+    attemptFireMissile(currentPlayer, opponent, currentPlayerHitBoard);
+```
+
+Depending on if the turn is odd / even, the player `Board` class will switch to the currently playing user. This data is then passed to the `attemptFireMissile` function where the users input is then taken and then similar logic to above with placing ships.
+
+I wrote some logic which checks if the users inputted coord grid position is occupied by an enemy ship. If so then I add a little X to the opponents board and the currentPlayers hit board, I am also checking if all the opponent ships are destroyed, in which case we can end the game: 
+
+```C++ 
+if(opponentMatrix[index.row][index.col] == shipInitalAsString) {
+				opponentShips[i]->takeDamage();
+				opponent->setMissleLocationOnHitGrid(index, "X");
+				currentPlayerHitBoard->setMissleLocationOnHitGrid(index, "X");
+
+				if(opponentShips[i]->getIsShipDestroyed()) {
+					std::cout << "Your missile has destroyed an enemy ship!\n";
+					opponent->setDestroyedShipAmount();
+					checkIfGameEnd(opponent->getDestroyedShipAmount(), opponentShips.size(), currentPlayer);
+				}
+```
+
+## Code review
+
+The part of the code took a lot of thinking. I had to take into account the different game modes. This started as a singular operation but after I implimented Salvo I had to loop through this logic a few times each turn which was tricky to get right. But overall I'm happy with how it turned out as a lot of the work needed I had already implimented so it wasn't much work to get working quickly.
+
+## Changes 
+
+As stated above the main change was allowing multiple missile hits for Salvo mode. As well as this, I had to change the logic to be able to handle different amounts of inputs, which meant in some situations I should allow spacing in input for such things as "1A 2A 3A" etc. 
